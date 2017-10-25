@@ -5,19 +5,19 @@ import (
 	"time"
 
 	. "v2ray.com/core/common/protocol"
-	"v2ray.com/core/testing/assert"
+	. "v2ray.com/ext/assert"
 )
 
 func TestGenerateRandomInt64InRange(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	base := time.Now().Unix()
 	delta := 100
 	generator := NewTimestampGenerator(Timestamp(base), delta)
 
 	for i := 0; i < 100; i++ {
-		v := int64(generator())
-		assert.Int64(v).AtMost(base + int64(delta))
-		assert.Int64(v).AtLeast(base - int64(delta))
+		val := int64(generator())
+		assert(val, AtMost, base + int64(delta))
+		assert(val, AtLeast, base - int64(delta))
 	}
 }

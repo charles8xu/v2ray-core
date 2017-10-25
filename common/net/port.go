@@ -1,15 +1,9 @@
 package net
 
 import (
-	"errors"
 	"strconv"
 
 	"v2ray.com/core/common/serial"
-)
-
-var (
-	// ErrInvalidPortRage indicates an error during port range parsing.
-	ErrInvalidPortRange = errors.New("Invalid port range.")
 )
 
 // Port represents a network port in TCP and UDP protocol.
@@ -23,45 +17,57 @@ func PortFromBytes(port []byte) Port {
 
 // PortFromInt converts an integer to a Port.
 // @error when the integer is not positive or larger then 65535
-func PortFromInt(v int) (Port, error) {
-	if v <= 0 || v > 65535 {
-		return Port(0), ErrInvalidPortRange
+func PortFromInt(val uint32) (Port, error) {
+	if val > 65535 {
+		return Port(0), newError("invalid port range: ", val)
 	}
-	return Port(v), nil
+	return Port(val), nil
 }
 
 // PortFromString converts a string to a Port.
 // @error when the string is not an integer or the integral value is a not a valid Port.
 func PortFromString(s string) (Port, error) {
-	v, err := strconv.Atoi(s)
+	val, err := strconv.ParseUint(s, 10, 32)
 	if err != nil {
-		return Port(0), ErrInvalidPortRange
+		return Port(0), newError("invalid port range: ", s)
 	}
-	return PortFromInt(v)
+	return PortFromInt(uint32(val))
 }
 
-// Value return the correspoding uint16 value of this Port.
-func (this Port) Value() uint16 {
-	return uint16(this)
+// Value return the correspoding uint16 value of a Port.
+func (p Port) Value() uint16 {
+	return uint16(p)
 }
 
-// Bytes returns the correspoding bytes of this Port, in big endian order.
-func (this Port) Bytes(b []byte) []byte {
-	return serial.Uint16ToBytes(this.Value(), b)
+// Bytes returns the correspoding bytes of a Port, in big endian order.
+func (p Port) Bytes(b []byte) []byte {
+	return serial.Uint16ToBytes(p.Value(), b)
 }
 
-// String returns the string presentation of this Port.
-func (this Port) String() string {
-	return serial.Uint16ToString(this.Value())
+// String returns the string presentation of a Port.
+func (p Port) String() string {
+	return serial.Uint16ToString(p.Value())
 }
 
-// PortRange represents a range of ports.
-type PortRange struct {
-	From Port
-	To   Port
+// FromPort returns the begining port of this PortRange.
+func (p PortRange) FromPort() Port {
+	return Port(p.From)
 }
 
-// Contains returns true if the given port is within the range of this PortRange.
-func (this PortRange) Contains(port Port) bool {
-	return this.From <= port && port <= this.To
+// ToPort returns the end port of this PortRange.
+func (p PortRange) ToPort() Port {
+	return Port(p.To)
+}
+
+// Contains returns true if the given port is within the range of a PortRange.
+func (p PortRange) Contains(port Port) bool {
+	return p.FromPort() <= port && port <= p.ToPort()
+}
+
+// SinglePortRange returns a PortRange contains a single port.
+func SinglePortRange(p Port) *PortRange {
+	return &PortRange{
+		From: uint32(p),
+		To:   uint32(p),
+	}
 }
